@@ -2,7 +2,7 @@ from django.core.validators import MaxValueValidator
 from django.db import models
 
 from clients.models import Client
-from services.tasks import set_price
+from services.tasks import set_price, set_comment
 
 
 class Service(models.Model):
@@ -17,6 +17,7 @@ class Service(models.Model):
         if self.__full_price != self.full_price:
             for subscription in self.subscriptions.all():
                 set_price.delay(subscription.id)
+                set_comment.delay(subscription.id)
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -44,6 +45,7 @@ class Plan(models.Model):
         if self.__discount_percent != self.discount_percent:
             for subscription in self.subscriptions.all():
                 set_price.delay(subscription.id)
+                set_comment.delay(subscription.id)
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -55,6 +57,7 @@ class Subscription(models.Model):
     service = models.ForeignKey(Service, related_name='subscriptions', on_delete=models.PROTECT)
     plan = models.ForeignKey(Plan, related_name='subscriptions', on_delete=models.PROTECT)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    comment = models.CharField(max_length=100, blank=True, null=True, default=None)
 
     # Так делать нельзя:
     # def save(self, *args, save_model=True, **kwargs):
