@@ -59,7 +59,15 @@ class Subscription(models.Model):
     service = models.ForeignKey(Service, related_name='subscriptions', on_delete=models.PROTECT)
     plan = models.ForeignKey(Plan, related_name='subscriptions', on_delete=models.PROTECT)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    comment = models.CharField(max_length=100, blank=True, null=True, default=None)
+    comment = models.CharField(max_length=100, blank=True, null=True, default=None, db_index=True)
+
+    field_a = models.CharField(max_length=50, blank=True, null=True, default='')
+    field_b = models.CharField(max_length=50, blank=True, null=True, default='')
+
+    class Meta:
+        indexes =[
+            models.Index(fields=['field_a', 'field_b'])
+        ]
 
     def save(self, *args, **kwargs):
         creating = not bool(self.id)
