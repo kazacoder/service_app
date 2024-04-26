@@ -20,7 +20,6 @@ class SubscriptionView(ReadOnlyModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         response = super().list(request, *args, **kwargs)
 
-
         price_cache = cache.get(settings.PRICE_CACHE_NAME)
 
         if price_cache:

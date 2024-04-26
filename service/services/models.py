@@ -1,7 +1,9 @@
 from django.core.validators import MaxValueValidator
 from django.db import models
+from django.db.models.signals import post_delete
 
 from clients.models import Client
+from services.receivers import delete_cache_total_sum
 from services.tasks import set_price, set_comment
 
 
@@ -14,7 +16,7 @@ class Service(models.Model):
         self.__full_price = self.full_price
 
     def save(self, *args, **kwargs):
-        if self.__full_price != self.full_price:
+        if self.full_price != self.__full_price:
             for subscription in self.subscriptions.all():
                 set_price.delay(subscription.id)
                 set_comment.delay(subscription.id)
@@ -42,7 +44,7 @@ class Plan(models.Model):
         self.__discount_percent = self.discount_percent
 
     def save(self, *args, **kwargs):
-        if self.__discount_percent != self.discount_percent:
+        if self.discount_percent != self.__discount_percent:
             for subscription in self.subscriptions.all():
                 set_price.delay(subscription.id)
                 set_comment.delay(subscription.id)
@@ -59,6 +61,14 @@ class Subscription(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     comment = models.CharField(max_length=100, blank=True, null=True, default=None)
 
+    def save(self, *args, **kwargs):
+        creating = not bool(self.id)
+        result = super().save(*args, **kwargs)
+        if creating:
+            set_price.delay(self.id)
+        return result
+
+
     # Так делать нельзя:
     # def save(self, *args, save_model=True, **kwargs):
     #     if save_model:
@@ -67,3 +77,6 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f'{self.client}, {self.service}, {self.plan}'
+
+
+post_delete.connect(delete_cache_total_sum, sender=Subscription)

@@ -25,6 +25,7 @@ def set_price(subs_id):
         subscription.save()  # (save_model=False)
     cache.delete(settings.PRICE_CACHE_NAME)
 
+
 @shared_task(base=Singleton)
 def set_comment(subs_id):
     from services.models import Subscription
